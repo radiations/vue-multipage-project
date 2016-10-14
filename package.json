@@ -4,8 +4,9 @@
   "description": "Vue multipage project.(Vue多页 web 前端模块)",
   "main": "gulpfile.js",
   "scripts": {
-    "test": "gulp test",
-    "stg": "gulp stg"
+    "dev": "gulp test",
+    "stg": "gulp stg",
+    "prd": "gulp prd"
   },
   "devDependencies": {
     "del": "^1.2.1",
@@ -29,7 +30,7 @@
     "plato": "^1.7.0",
     "through2": "^0.6.5"
   },
-  "repository": "bullub/vue-multipage-project",
+  "repository": "radiations/vue-multipage-project",
   "keywords": [
     "gulp vue multipage"
   ],
