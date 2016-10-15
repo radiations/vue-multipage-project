@@ -304,15 +304,15 @@ gulp.task('watch', function () {
             buildBasePath = path.resolve(buildFilePath, '../');
 
             // 将文件复制到build目录
-            stream = gulp.src(filePath)
-                .pipe(gulp.dest(buildBasePath));
+            stream = gulp.src(filePath);
 
             if (status.isFile()) {
                 // 针对不同类型的文件进行相应处理
                 if (extName == '.js') {
                     if (runningEnvModules.jshint && !jshintIsIgnore(filePath)) {
                         // 对js进行语法检查
-                        stream.pipe(gulpJshint({evil: true}))
+                        stream.pipe(gulp.dest(buildBasePath))
+                            .pipe(gulpJshint({evil: true}))
                             .pipe(gulpJshint.reporter(jshintReporter))
                             .on('finish', function () {
                                 console.log('The grammar checking of the file \x1B[32m"%s"\x1B[39m has passed.', fileBaseName);
@@ -338,7 +338,7 @@ gulp.task('watch', function () {
                         rebuild = false;
                     } else {
                         // 解析html文件中的命令
-                        stream
+                        stream.pipe(gulp.dest(buildBasePath))
                             .pipe(gulpTidt({
                                 env: runningEnv,
                                 includePath: includePath,
@@ -353,6 +353,14 @@ gulp.task('watch', function () {
 
                     }
 
+                } else if(extName === '.vue') {
+                    stream.pipe(vuePack())
+                        .pipe(gulp.dest(buildBasePath))
+                        .on('finish', function () {
+                            console.log('The vue parsing of the file \x1B[32m"%s"\x1B[39m has completed.', fileBaseName);
+                        });
+                } else {
+                    stream.pipe(gulp.dest(buildBasePath));
                 }
             }
         }

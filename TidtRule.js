@@ -6,6 +6,7 @@ module.exports = {
         {
             name: 'js',
             value: [
+                'aladdin',
                 'vue',
                 'config/base.js',
                 'config/{ENV}.js'

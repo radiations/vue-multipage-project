@@ -11,8 +11,8 @@ module.exports = {
     ],
     // 需要执行watch的任务
     "watchTasks": [
-        // "dev",
-        // "stg",
+        "dev",
+        "stg",
         // "prd"
     ],
     // 需要启动Web服务的任务
@@ -25,7 +25,7 @@ module.exports = {
     "srcPath": "src",
 
     // 构建路径（相对根目录）
-    "buildPath": "build",
+    "buildPath": "dist",
 
     // 包含类指令路径（相对源码路径）
     "includePath": {
@@ -38,20 +38,20 @@ module.exports = {
     "includeExt": {
         "js": "js",
         "css": "css",
-        "tpl": "ejs"
+        "tpl": "html"
     },
 
     // 构建时启用的gulp插件
     "modules": {
         "dev": {
             "jshint": true,
-            "measure": true,
+            //"measure": true,
             "vuepack": true
         },
         "stg": {
             "jshint": true,
             "vuepack": true,
-            "measure": true
+            //"measure": true
         },
         "prd": {
             "measure": true,
