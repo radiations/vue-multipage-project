@@ -10,9 +10,7 @@
         data: function () {
             return {};
         },
-        components: {
-            'test-component': Switch
-        }
+        components: {}
     });
 
 }(window, Vue));

@@ -18,7 +18,6 @@ var del = require('del'),
     map = require("map-stream"),
     vuePack = require("gulp-vue-pack"),
     gulpBabel = require("gulp-babel"),
-    gulpEslint = require("gulp-eslint"),
     //必须执行babel
     runBabel = false,
 
@@ -34,7 +33,6 @@ var del = require('del'),
     includeExt = tidtConf.includeExt,
     modules = tidtConf.modules,
     jshintIgnore = tidtConf.jshintIgnore,
-    eslintIgnore = tidtConf.eslintIgnore,
     babelIgnore = tidtConf.babelIgnore,
     measureIgnore = tidtConf.measureIgnore,
     scanDir = tidtConf.scanDir,
@@ -62,10 +60,6 @@ port = 2324;
 
         if (taskModules.vuepack) {
             frontTasks.push("vuepack");
-        }
-
-        if(taskModules.eslint) {
-            frontTasks.push('eslint');
         }
 
         if (taskModules.jshint) {
@@ -198,47 +192,6 @@ gulp.task('babel', function(next) {
 /**
  * js语法检查（执行jshint模块）
  */
-gulp.task('eslint', function (next) {
-    var src = [srcPath + '/**/*.js'],
-        ignorePath = null,
-        jshintIsErr = false;
-
-    // 忽略检查
-    if (eslintIgnore) {
-        for (var i = 0, len = eslintIgnore.length; i < len; i++) {
-            ignorePath = eslintIgnore[i];
-
-            if (!/.+\.js$/.test(ignorePath)) {
-                ignorePath += '/**/*.js';
-            }
-
-            src.push('!' + path.join(srcPath, ignorePath));
-        }
-
-        //src = src.concat(jshintIgnore);
-    }
-
-    // 语法检查
-    gulp.src(src)
-        .pipe(gulpEslint({
-            rules: {
-                'strict': 2
-            }
-        }))
-        // pipe(gulpEslint.results(results => {
-        //     console.log(`Total Results: ${results.length}`);
-        //     console.log(`Total Warnings: ${results.warningCount}`);
-        //     console.log(`Total Errors: ${results.errorCount}`);
-        // }))
-        .pipe(gulpEslint.format())
-        .pipe(gulpEslint.failAfterError())
-        // .pipe(gulpEslint.failOnError())
-        .on('finish', next);
-});
-
-/**
- * js语法检查（执行jshint模块）
- */
 gulp.task('jshint', function (next) {
     var src = [srcPath + '/**/*.js'],
         ignorePath = null,
@@ -261,7 +214,7 @@ gulp.task('jshint', function (next) {
 
     // 语法检查
     gulp.src(src)
-        .pipe(gulpJshint({evil: true}))
+        .pipe(gulpJshint({evil: true, esversion: 6}))
         .pipe(gulpJshint.reporter(function (res) {
             jshintIsErr = jshintReporter(res);
         }))
@@ -397,8 +350,7 @@ gulp.task('watch', function () {
                 if (extName == '.js') {
                     if (runningEnvModules.jshint && !jshintIsIgnore(filePath)) {
                         // 对js进行语法检查
-                        stream.pipe(gulp.dest(buildBasePath))
-                            .pipe(gulpJshint({evil: true}))
+                        stream.pipe(gulpJshint({evil: true, esversion: 6}))
                             .pipe(gulpJshint.reporter(jshintReporter));
                     }
 
@@ -408,8 +360,8 @@ gulp.task('watch', function () {
                             only: [/.+\.js$/i]
                         }));
                     }
-
-                    stream.on('finish', function () {
+                    stream.pipe(gulp.dest(buildBasePath))
+                        .on('finish', function () {
                         console.log('The grammar checking of the file \x1B[32m"%s"\x1B[39m has passed.', fileBaseName);
                     });
                 } else if (extName == '.html' || extName == '.ejs') {

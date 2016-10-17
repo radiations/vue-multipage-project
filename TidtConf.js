@@ -46,7 +46,6 @@ module.exports = {
         "dev": {
              "jshint": true,
             //"measure": true,
-            // "eslint": true,
             "vuepack": true,
             "babel": true,
         },
@@ -67,9 +66,6 @@ module.exports = {
 
     // jshint忽略检查的目录和文件
     "jshintIgnore": [
-        'assets/lib/'
-    ],
-    eslintIgnore: [
         'assets/lib/'
     ],
     babelIgnore: [
