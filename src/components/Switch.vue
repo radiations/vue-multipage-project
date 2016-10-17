@@ -16,6 +16,9 @@
         msg: 'hello vue'
       }
     },
+    aaa1fdd(){
+
+    },
     components: {
     }
   }

@@ -17,6 +17,10 @@ var del = require('del'),
     plato = require("plato"),
     map = require("map-stream"),
     vuePack = require("gulp-vue-pack"),
+    gulpBabel = require("gulp-babel"),
+    gulpEslint = require("gulp-eslint"),
+    //必须执行babel
+    runBabel = false,
 
 // 配置信息
     tidtConf = require('./TidtConf.js'),
@@ -30,6 +34,8 @@ var del = require('del'),
     includeExt = tidtConf.includeExt,
     modules = tidtConf.modules,
     jshintIgnore = tidtConf.jshintIgnore,
+    eslintIgnore = tidtConf.eslintIgnore,
+    babelIgnore = tidtConf.babelIgnore,
     measureIgnore = tidtConf.measureIgnore,
     scanDir = tidtConf.scanDir,
 // 构建规则
@@ -56,6 +62,10 @@ port = 2324;
 
         if (taskModules.vuepack) {
             frontTasks.push("vuepack");
+        }
+
+        if(taskModules.eslint) {
+            frontTasks.push('eslint');
         }
 
         if (taskModules.jshint) {
@@ -105,6 +115,10 @@ port = 2324;
                                     tasks.push('minifyHtml');
                                 }
 
+                                if(taskModules.babel) {
+                                    tasks.push('babel');
+                                }
+
                                 // JavaScript压缩
                                 if (taskModules.uglify) {
                                     tasks.push('uglify');
@@ -151,6 +165,77 @@ port = 2324;
 
 })();
 
+//使用babel将es6转换成es5
+gulp.task('babel', function(next) {
+    var src = [path.join(buildPath, runningEnv, "/**/*.js")],
+        ignorePath = null;
+
+    if(babelIgnore) {
+        for (var i = 0, len = babelIgnore.length; i < len; i++) {
+            ignorePath = babelIgnore[i];
+
+            if (!/.+\.js$/.test(ignorePath)) {
+                ignorePath += '/**/*.js';
+            }
+
+            src.push('!' + path.join(buildPath, runningEnv, ignorePath));
+        }
+        //src = src.concat(jshintIgnore);
+    }
+
+    gulp.src(src)
+        .pipe(gulpBabel({
+            presets: ['es2015'],
+            only: [/.+\.js$/i]
+        }))
+        .pipe(gulp.dest(path.join(buildPath, runningEnv)))
+        .on("finish", function () {
+            next();
+        });
+
+});
+
+/**
+ * js语法检查（执行jshint模块）
+ */
+gulp.task('eslint', function (next) {
+    var src = [srcPath + '/**/*.js'],
+        ignorePath = null,
+        jshintIsErr = false;
+
+    // 忽略检查
+    if (eslintIgnore) {
+        for (var i = 0, len = eslintIgnore.length; i < len; i++) {
+            ignorePath = eslintIgnore[i];
+
+            if (!/.+\.js$/.test(ignorePath)) {
+                ignorePath += '/**/*.js';
+            }
+
+            src.push('!' + path.join(srcPath, ignorePath));
+        }
+
+        //src = src.concat(jshintIgnore);
+    }
+
+    // 语法检查
+    gulp.src(src)
+        .pipe(gulpEslint({
+            rules: {
+                'strict': 2
+            }
+        }))
+        // pipe(gulpEslint.results(results => {
+        //     console.log(`Total Results: ${results.length}`);
+        //     console.log(`Total Warnings: ${results.warningCount}`);
+        //     console.log(`Total Errors: ${results.errorCount}`);
+        // }))
+        .pipe(gulpEslint.format())
+        .pipe(gulpEslint.failAfterError())
+        // .pipe(gulpEslint.failOnError())
+        .on('finish', next);
+});
+
 /**
  * js语法检查（执行jshint模块）
  */
@@ -168,10 +253,10 @@ gulp.task('jshint', function (next) {
                 ignorePath += '/**/*.js';
             }
 
-            src.push('!' + srcPath + '/' + ignorePath);
+            src.push('!' + path.join(srcPath, ignorePath));
         }
 
-        src = src.concat(jshintIgnore);
+        //src = src.concat(jshintIgnore);
     }
 
     // 语法检查
@@ -226,13 +311,14 @@ gulp.task('minifyHtml', function (next) {
 /**
  * js压缩（执行jshint模块）
  */
-gulp.task('uglify', function (next) {
+gulp.task('uglify', ['babel'], function (next) {
     var taskPath = path.join(buildPath, runningEnv);
 
     gulp.src([path.join(taskPath, '/**/*.js')])
         .pipe(gulpUglify())
         .pipe(gulp.dest(taskPath))
         .on('finish', next);
+
 });
 
 /**
@@ -313,12 +399,19 @@ gulp.task('watch', function () {
                         // 对js进行语法检查
                         stream.pipe(gulp.dest(buildBasePath))
                             .pipe(gulpJshint({evil: true}))
-                            .pipe(gulpJshint.reporter(jshintReporter))
-                            .on('finish', function () {
-                                console.log('The grammar checking of the file \x1B[32m"%s"\x1B[39m has passed.', fileBaseName);
-                            });
+                            .pipe(gulpJshint.reporter(jshintReporter));
                     }
 
+                    if(runningEnvModules.babel && !babelIsIgnore(filePath)) {
+                        stream.pipe(gulpBabel({
+                            presets: ['es2015'],
+                            only: [/.+\.js$/i]
+                        }));
+                    }
+
+                    stream.on('finish', function () {
+                        console.log('The grammar checking of the file \x1B[32m"%s"\x1B[39m has passed.', fileBaseName);
+                    });
                 } else if (extName == '.html' || extName == '.ejs') {
                     var rebuild = false;
 
@@ -355,6 +448,10 @@ gulp.task('watch', function () {
 
                 } else if(extName === '.vue') {
                     stream.pipe(vuePack())
+                        .pipe(gulpBabel({
+                            presets: ['es2015'],
+                            only: [/.+\.js$/i]
+                        }))
                         .pipe(gulp.dest(buildBasePath))
                         .on('finish', function () {
                             console.log('The vue parsing of the file \x1B[32m"%s"\x1B[39m has completed.', fileBaseName);
@@ -380,6 +477,24 @@ function jshintIsIgnore(filePath) {
 
     for (var i = 0, len = jshintIgnore.length; i < len; i++) {
         ignorePath = path.join(srcRootPath, jshintIgnore[i])
+
+        if (filePath.indexOf(ignorePath) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function babelIsIgnore(filePath) {
+    if (!babelIgnore) {
+        return false;
+    }
+
+    var ignorePath = null;
+
+    for (var i = 0, len = babelIgnore.length; i < len; i++) {
+        ignorePath = path.join(srcRootPath, babelIgnore[i])
 
         if (filePath.indexOf(ignorePath) == 0) {
             return true;
@@ -582,7 +697,7 @@ gulp.task("measure", ['unit-test'], function (done) {
                 ignorePath += '/**/*.js';
             }
 
-            src.push('!' + srcPath + '/' + ignorePath);
+            src.push('!' + path.join(srcPath, ignorePath));
         }
 
         src = src.concat(measureIgnore);

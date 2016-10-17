@@ -44,9 +44,11 @@ module.exports = {
     // 构建时启用的gulp插件
     "modules": {
         "dev": {
-            "jshint": true,
+             "jshint": true,
             //"measure": true,
-            "vuepack": true
+            // "eslint": true,
+            "vuepack": true,
+            "babel": true,
         },
         "stg": {
             "jshint": true,
@@ -65,6 +67,12 @@ module.exports = {
 
     // jshint忽略检查的目录和文件
     "jshintIgnore": [
+        'assets/lib/'
+    ],
+    eslintIgnore: [
+        'assets/lib/'
+    ],
+    babelIgnore: [
         'assets/lib/'
     ],
     //代码质量检查忽略部分
